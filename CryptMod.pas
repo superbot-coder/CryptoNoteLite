@@ -3,7 +3,7 @@
 interface
 
 Uses
-  System.SysUtils, Classes, Dialogs, System.Math, DCPrc4, DCPSha1, DCPSha256,
+  System.SysUtils, System.StrUtils, Classes, Dialogs, System.Math, DCPrc4, DCPSha1, DCPSha256,
   DCPSha512, DCPMD5, DeviceSN;
 // MsgLog;
 
@@ -27,8 +27,8 @@ Var
   SignMaxLength: SmallInt = 72;
 
 const
-  AlgoName: array [TAlgoType] of string = ('UNTYPE', 'RC4_SHA1', 'RC4_SHA256',
-    'RC4_SHA512');
+  AlgoName: array[TAlgoType] of string = (
+       'UNTYPE', 'RC4_SHA1', 'RC4_SHA256', 'RC4_SHA512');
 
 function GetKey: AnsiString;
 function CheckHash(hash: AnsiString; l: integer): Boolean;
@@ -68,11 +68,9 @@ begin
   Result := false;
   sh := ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D',
     'E', 'F', 'a', 'b', 'c', 'd', 'e', 'f'];
-  if Length(hash) <> l then
-    Exit;
+  if Length(hash) <> l then Exit;
   for i := 1 to Length(hash) do
-    if Not(hash[i] in sh) then
-      Exit;
+    if Not(hash[i] in sh) then Exit;
   Result := True;
 end;
 
@@ -207,13 +205,11 @@ function GetAlgoType(StrAlgo: String): TAlgoType;
 var
   i: ShortInt;
 begin
-  Result := UNTYPE;
-  for i := 0 to Length(AlgoName) - 1 do
-    if StrAlgo = AlgoName[TAlgoType(i)] then
-    begin
-      Result := TAlgoType(i);
-      Exit;
-    end;
+  i := AnsiIndexStr(StrAlgo, AlgoName);
+  if i = -1 then
+    Result := TAlgoType(0)
+  else
+    Result := TAlgoType(i);
 end;
 
 function GetSignature(Sign: String; PSign: PSignature): Boolean;

@@ -19,22 +19,20 @@ object FrmMain: TFrmMain
   TextHeight = 13
   object PnlMain: TPanel
     Left = 0
-    Top = 41
+    Top = 57
     Width = 767
-    Height = 603
+    Height = 587
     Align = alClient
     BevelOuter = bvNone
     Caption = 'PnlMain'
     TabOrder = 0
-    ExplicitLeft = 8
-    ExplicitTop = 24
-    ExplicitWidth = 1049
-    ExplicitHeight = 616
+    ExplicitTop = 41
+    ExplicitHeight = 603
     object SynEdit: TSynEdit
       Left = 0
       Top = 0
       Width = 767
-      Height = 584
+      Height = 568
       Align = alClient
       Ctl3D = True
       ParentCtl3D = False
@@ -55,60 +53,70 @@ object FrmMain: TFrmMain
       Gutter.Font.Name = 'Consolas'
       Gutter.Font.Style = []
       Highlighter = SynGeneralSyn
-      ExplicitLeft = 1
-      ExplicitTop = 40
-      ExplicitWidth = 809
-      ExplicitHeight = 557
+      ExplicitHeight = 584
     end
     object StatusBar: TStatusBar
       Left = 0
-      Top = 584
+      Top = 568
       Width = 767
       Height = 19
       Panels = <
         item
           Text = #1060#1072#1081#1083' '#1089#1086#1079#1076#1072#1085':'
-          Width = 300
+          Width = 200
         end
         item
           Text = #1060#1072#1081#1083' '#1080#1084#1077#1085':'
-          Width = 50
+          Width = 200
+        end
+        item
+          Text = #1064#1080#1092#1088#1086#1074#1072#1085#1085#1099#1081': '
+          Width = 200
         end>
-      ExplicitLeft = 336
-      ExplicitTop = 568
-      ExplicitWidth = 0
+      ExplicitTop = 584
     end
   end
   object PnlBar: TPanel
     Left = 0
     Top = 0
     Width = 767
-    Height = 41
+    Height = 57
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 1
-    ExplicitLeft = 1
-    ExplicitTop = 1
-    ExplicitWidth = 809
+    object LblOpenFile: TLabel
+      Left = 15
+      Top = 7
+      Width = 30
+      Height = 13
+      Caption = #1060#1072#1081#1083':'
+    end
+    object LblFileName: TLabel
+      Left = 51
+      Top = 7
+      Width = 78
+      Height = 13
+      Caption = '<'#1053#1086#1074#1099#1081' '#1092#1072#1081#1083'>'
+    end
     object BtnEnCrypt: TButton
       Left = 15
-      Top = 10
-      Width = 90
+      Top = 26
+      Width = 178
       Height = 25
-      Caption = #1047#1072#1096#1080#1092#1088#1086#1074#1072#1090#1100
+      Action = ActEncryptAndSaveFile
       TabOrder = 0
     end
     object BtnSave: TButton
-      Left = 111
-      Top = 10
-      Width = 130
+      Left = 199
+      Top = 26
+      Width = 178
       Height = 25
       Caption = #1057#1086#1093#1088#1072#1085#1080#1090#1100' '#1080#1079#1084#1077#1085#1077#1085#1080#1103
       TabOrder = 1
     end
     object BtnSaveAsDecrypt: TButton
-      Left = 247
-      Top = 10
+      Left = 383
+      Top = 26
       Width = 178
       Height = 25
       Caption = #1057#1086#1093#1088#1072#1085#1080#1090#1100' '#1085#1077' '#1079#1072#1096#1080#1092#1088#1086#1074#1072#1085#1099#1084
@@ -507,5 +515,10 @@ object FrmMain: TFrmMain
       8007C007C003E0018007C007C003F0018007C007C003F0018007C007C007F803
       0007C00FC00FF81F8007C01FFFFFFFFF00000000000000000000000000000000
       000000000000}
+  end
+  object SaveDialog: TSaveDialog
+    InitialDir = 'C:\Users\USER\Desktop'
+    Left = 488
+    Top = 345
   end
 end
