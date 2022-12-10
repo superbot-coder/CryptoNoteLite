@@ -7,6 +7,8 @@
 **Статус проекта:** Активная разработке (не закончено)    
 **Project status:** Currently in active development(UnFinished)
 
+![Screenshot](https://github.com/superbot-coder/CryptoNoteLite/blob/main/ScreenShot_01.PNG "")
+
 **[RU] Требования для компиляции и зависимости:**
 - RAD Studio Delphi 10.4 и выше
 - Библиотека DCPCrypt2-2010

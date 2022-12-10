@@ -26,8 +26,6 @@ object FrmMain: TFrmMain
     BevelOuter = bvNone
     Caption = 'PnlMain'
     TabOrder = 0
-    ExplicitTop = 41
-    ExplicitHeight = 603
     object SynEdit: TSynEdit
       Left = 0
       Top = 0
@@ -53,7 +51,6 @@ object FrmMain: TFrmMain
       Gutter.Font.Name = 'Consolas'
       Gutter.Font.Style = []
       Highlighter = SynGeneralSyn
-      ExplicitHeight = 584
     end
     object StatusBar: TStatusBar
       Left = 0
@@ -63,17 +60,16 @@ object FrmMain: TFrmMain
       Panels = <
         item
           Text = #1060#1072#1081#1083' '#1089#1086#1079#1076#1072#1085':'
-          Width = 200
+          Width = 230
         end
         item
           Text = #1060#1072#1081#1083' '#1080#1084#1077#1085':'
-          Width = 200
+          Width = 230
         end
         item
           Text = #1064#1080#1092#1088#1086#1074#1072#1085#1085#1099#1081': '
           Width = 200
         end>
-      ExplicitTop = 584
     end
   end
   object PnlBar: TPanel
@@ -113,6 +109,7 @@ object FrmMain: TFrmMain
       Height = 25
       Caption = #1057#1086#1093#1088#1072#1085#1080#1090#1100' '#1080#1079#1084#1077#1085#1077#1085#1080#1103
       TabOrder = 1
+      OnClick = BtnSaveClick
     end
     object BtnSaveAsDecrypt: TButton
       Left = 383

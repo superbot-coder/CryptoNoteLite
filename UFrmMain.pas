@@ -8,7 +8,7 @@ uses
   Vcl.ActnMenus, System.Actions, Vcl.ActnList, Vcl.PlatformDefaultStyleActnCtrls,
   SynEdit, SynEditHighlighter, SynEditCodeFolding, SynHighlighterPas,
   SynHighlighterGeneral, Vcl.StdCtrls, SynHighlighterJSON, System.JSON, REST.JSON,
-  Vcl.ExtCtrls, Vcl.ComCtrls, Vcl.Menus, System.ImageList, Vcl.ImgList,
+  Vcl.ExtCtrls, Vcl.ComCtrls, Vcl.Menus, System.ImageList, Vcl.ImgList, Vcl.Themes,
   System.IOUtils, System.StrUtils, CryptMod;
 
 type
@@ -53,6 +53,7 @@ type
     procedure ActEncryptAndSaveFileExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure MM_WordWrapClick(Sender: TObject);
+    procedure BtnSaveClick(Sender: TObject);
   private
     FIsEncrypt: Boolean;
     FFileName: string;
@@ -73,6 +74,8 @@ type
     property DateChange: TDateTime read FDate_change;
     property IsEncrypt: Boolean read FIsEncrypt;
     procedure MsgBox(MsgStr: String; uType: Cardinal);
+    function FormatFileTimeToStr(LocalTime: tFileTime): String;
+    function FormatDateTimeToStr(DateTimeStr: String): String;
   end;
 
 var
@@ -94,14 +97,32 @@ var
 begin
   if Not OpenDialog.Execute then Exit;
   FFileName := OpenDialog.FileName;
+  FrmMain.LblFileName.Caption := OpenDialog.FileName;
   ext := ExtractFileExt(AnsiLowerCase(OpenDialog.fileName));
   if (ext = '.cryjson') or (ext = '.ctxt') or (ext = '.crytxt') then
   begin
     DecryptOpenFile;
-    Exit;
+  end
+  else
+  begin
+    SynEdit.Lines.LoadFromFile(OpenDialog.FileName);
+    JSONFile := Nil;
+    FIsEncrypt := false;
   end;
-  SynEdit.Lines.LoadFromFile(OpenDialog.FileName);
   UpDateStatusBar;
+end;
+
+procedure TFrmMain.BtnSaveClick(Sender: TObject);
+Var
+  JValue: TJSONValue;
+begin
+  //JSONFile.SetPairs('algo_type' TJSONString.Create('MODIFED'));
+  JValue := JSONFile.GetValue('algo_type');
+  JValue.Free;
+  Jvalue := TJSONString.Create('Modifed');
+  //JSONFile.AddPair('algo_type', 'Modifed');
+  ///JSONFile.GetValue('algo_type') := TJSONString.Create('Modifed');
+  ShowMessage(JSONFile.GetValue('algo_type').Value);
 end;
 
 procedure TFrmMain.ActExitExecute(Sender: TObject);
@@ -111,11 +132,12 @@ end;
 
 procedure TFrmMain.ActEncryptAndSaveFileExecute(Sender: TObject);
 var
-  JContent: TJSONObject;
-  dt_create, dt_change: TDateTime;
-  content_hash: String;
-  AEContent: AnsiString;
-  JSONBytes : TBytes;
+  dt: TDateTime;
+  JContent     : TJSONObject;
+  content_hash : String;
+  AEContent    : AnsiString;
+  JSONBytes    : TBytes;
+  JValue       : TJSONValue;
 begin
 
   if (Not SynEdit.Modified) and (SynEdit.lines.Text = '') then
@@ -124,16 +146,11 @@ begin
     Exit;
   end;
 
-  // Выбор файла, если он не существует; Select file If filename not existes
-  if FileName = '' then
-    if Not SaveDialog.Execute then Exit;
-
   // Выбор алгоритма шифрования; Select crypt algoritm for encrypt
   FrmSelectEncrypt.FrmShowModal(DLG_ECRYPT);
+  if Not FrmSelectEncrypt.Apply then Exit;
 
-  dt_create := Date + Time;
-  dt_change := dt_create;
-
+  dt := Date + Time;
   JContent := TJSONObject.Create;
   JContent.AddPair('content', SynEdit.Lines.Text);
   JContent.AddPair('content_hash', GetSHA1Hash(SynEdit.Lines.Text));
@@ -144,24 +161,51 @@ begin
     RC4_SHA512 : AEContent := EncryptRC4_SHA512(MASTER_PASSWORD, JContent.ToJSON);
   end;
 
-  JSONFile := TJSONObject.Create;
-  With JSONFile do
+  content_hash := GetSHA1Hash(AEContent);
+
+  if JSONFile = Nil then
   begin
-    AddPair('version', TJSONNumber.Create(1));
-    AddPair('algo_type', AlgoName[FrmSelectEncrypt.ALGO]);
-    AddPair('date_create', DateTimeToStr(dt_create));
-    AddPair('date_change', DateTimeToStr(dt_change));
-    AddPair('content_hash', GetSHA1Hash(AEContent));
-    AddPair('encrypted_content', AEContent);
+    JSONFile := TJSONObject.Create;
+    With JSONFile do
+    begin
+      AddPair('version', TJSONNumber.Create(1));
+      AddPair('algo_type', FrmSelectEncrypt.CmBoxExAlgo.Text);
+      AddPair('date_create', DateTimeToStr(dt));
+      AddPair('date_change', DateTimeToStr(dt));
+      AddPair('content_hash', content_hash);
+      AddPair('encrypted_content', AEContent);
+    end;
+  end
+  else
+  begin
+    With JSONFile do
+    begin
+      JValue := FindValue('algo_type');
+      JValue.Free;
+      JValue := TJSONString.Create(FrmSelectEncrypt.CmBoxExAlgo.Text);
+      JValue := FindValue('date_change');
+      JValue.Free;
+      JValue := TJSONString.Create(DateTimeToStr(dt));
+      Jvalue := FindValue('content_hash');
+      JValue.Free;
+      JValue := TJSONString.Create(content_hash);
+      JValue := FindValue('encrypted_content');
+      JValue.Free;
+      JValue := TJSONString.Create(AEContent);
+    end;
+  end;
+
+  // Выбор файла, если он не существует; Select file If filename not existes
+  if FileName = '' then
+  begin
+    if SaveDialog.Execute then Exit;
+    FFileName  := SaveDialog.FileName;
   end;
 
   // Сохраняю содержимое в файл; Saving content to a file
-  TFile.WriteAllText(SaveDialog.FileName, JSONFile.toJson);
-  FFileName  := SaveDialog.FileName;
+  TFile.WriteAllText(FileName, JSONFile.toJson);
   FIsEncrypt := true;
-
-  MsgBox('Операйия выполнена успешно', MB_ICONINFORMATION);
-
+  MsgBox('Всё выполнена успешно.', MB_ICONINFORMATION);
 end;
 
 {------------------------------- DecryptOpenFile ------------------------------}
@@ -243,7 +287,7 @@ begin
   begin
     StrValue     := JSONFile.GetValue('date_create').Value;
     FDate_create := StrToDateTime(StrValue);
-    StatusBar.Panels[0].Text := 'Файл сoздан: ' + StrValue;
+    //StatusBar.Panels[0].Text := 'Файл сoздан: ' + StrValue;
   end
   else
     MsgBox('В файле не найден параметр "date_create"', MB_ICONERROR);
@@ -252,19 +296,46 @@ begin
   begin
     StrValue     := JSONFile.GetValue('date_change').Value;
     FDate_change := StrToDateTime(StrValue);
-    StatusBar.Panels[1].Text := 'Файл изменен: ' + StrValue;
+    //StatusBar.Panels[1].Text := 'Файл изменен: ' + StrValue;
   end
   else
     MsgBox('В файле не найден параметр "date_change"', MB_ICONERROR);
+  FIsEncrypt := true;
+end;
+
+
+function TFrmMain.FormatDateTimeToStr(DateTimeStr: String): String;
+var
+  sys_time: _SYSTEMTIME;
+  dt_str: string;
+begin
+  DateTimeToSystemTime(StrToDateTime(DateTimeStr), sys_time);
+  SetLength(dt_str, GetDateFormat(LOCALE_SYSTEM_DEFAULT, 0, @sys_time, PChar('dd MMMM yyyy'), Nil, 0));
+  GetDateFormat(LOCALE_SYSTEM_DEFAULT, 0, @sys_time, PChar('dd MMMM yyyy'), PChar(dt_str), Length(dt_str));
+  Result := Trim(dt_str) + ' ' +TimeToStr(SystemTimeToDateTime(sys_time));
+end;
+
+function TFrmMain.FormatFileTimeToStr(LocalTime: tFileTime): String;
+var
+  sys_time: _SYSTEMTIME;
+  dt_str: string;
+begin
+  FileTimeToSystemTime(LocalTime, sys_time);
+  SetLength(dt_str, GetDateFormat(LOCALE_SYSTEM_DEFAULT, 0, @sys_time, PChar('dd MMMM yyyy'), Nil, 0));
+  GetDateFormat(LOCALE_SYSTEM_DEFAULT, 0, @sys_time, PChar('dd MMMM yyyy'), PChar(dt_str), Length(dt_str));
+  Result := Trim(dt_str) + ' ' +TimeToStr(SystemTimeToDateTime(sys_time));
 end;
 
 {-------------------------------- FormCreate ----------------------------------}
 procedure TFrmMain.FormCreate(Sender: TObject);
 begin
   //FPASSWORD := '';
+
   FSessionKey := GetTrashStr(20);
   FIsEncrypt  := false;
   UpDateStatusBar;
+  TStyleManager.SetStyle('Amethyst Kamri'); // 'Sapphire Kamri'
+
 end;
 
 function TFrmMain.GetMasterPaswword: AnsiString;
@@ -286,13 +357,37 @@ begin
 end;
 
 procedure TFrmMain.UpDateStatusBar;
+var
+  SR: TSearchRec;
+  LocalTime: tFileTime;
 begin
   if JSONFile <> Nil then
   begin
     if JSONFile.FindValue('date_create') <> nil then
-      StatusBar.Panels[0].Text := JSONFile.GetValue('date_create').Value;
+      StatusBar.Panels[0].Text := 'Создан: ' +
+              FormatDateTimeToStr(JSONFile.GetValue('date_create').Value);
+
     if JSONFile.FindValue('date_change') <> nil then
-      StatusBar.Panels[1].Text := JSONFile.GetValue('date_change').Value;
+      StatusBar.Panels[1].Text := 'Изменен: ' +
+              FormatDateTimeToStr(JSONFile.GetValue('date_change').Value);
+  end
+  else
+  begin
+    if FileExists(FileName) then
+    begin
+      if FindFirst(FileName, faAnyFile, SR) = 0 then
+      begin
+        FileTimeToLocalFileTime(SR.FindData.ftCreationTime, LocalTime);
+        StatusBar.Panels[0].Text := 'Создан: ' + FormatFileTimeToStr(LocalTime);
+        FileTimeToLocalFileTime(SR.FindData.ftLastWriteTime, LocalTime);
+        StatusBar.Panels[1].Text := 'Изменен: ' + FormatFileTimeToStr(LocalTime);
+      end;
+    end
+    else
+    begin
+      StatusBar.Panels[0].Text := 'Создан:';
+      StatusBar.Panels[1].Text := 'Изменен:';
+    end;
   end;
   if IsEncrypt then
     StatusBar.Panels[2].Text := 'Шифрованный: Да'
