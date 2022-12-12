@@ -46,14 +46,21 @@ type
     MM_Settings: TMenuItem;
     N8: TMenuItem;
     SaveDialog: TSaveDialog;
-    LblOpenFile: TLabel;
+    LblFile: TLabel;
     LblFileName: TLabel;
+    ActAddNew: TAction;
+    N9: TMenuItem;
     procedure ActExitExecute(Sender: TObject);
     procedure ActOpenFileExecute(Sender: TObject);
     procedure ActEncryptAndSaveFileExecute(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure MM_WordWrapClick(Sender: TObject);
-    procedure BtnSaveClick(Sender: TObject);
+    procedure ActKeepDecryptExecute(Sender: TObject);
+    function MBox(MsgStr: String; uType: Cardinal): Integer;
+    procedure SynEditChange(Sender: TObject);
+    procedure ActSaveEditExecute(Sender: TObject);
+    procedure ActAddNewExecute(Sender: TObject);
+    procedure FormShow(Sender: TObject);
   private
     FIsEncrypt: Boolean;
     FFileName: string;
@@ -63,17 +70,17 @@ type
     FMasterPassword: AnsiString;
     FPASSWORD: AnsiString;
     procedure DecryptOpenFile;
-    function GetMasterPaswword: AnsiString;
+    function GetMasterPassword: AnsiString;
     procedure SetMasterPassword(APassStr: AnsiString);
     procedure UpDateStatusBar;
   public
     JSONFile: TJSONObject;
-    property MASTER_PASSWORD: AnsiString read GetMasterPaswword write SetMasterPassword;
-    property FileName: string read FFileName;
+    property MASTER_PASSWORD: AnsiString read GetMasterPassword write SetMasterPassword;
+    property CurrentFileName: string read FFileName;
     property DateCreate: TDateTime read FDate_create;
     property DateChange: TDateTime read FDate_change;
     property IsEncrypt: Boolean read FIsEncrypt;
-    procedure MsgBox(MsgStr: String; uType: Cardinal);
+
     function FormatFileTimeToStr(LocalTime: tFileTime): String;
     function FormatDateTimeToStr(DateTimeStr: String): String;
   end;
@@ -84,6 +91,9 @@ var
 
 Const
   CAPTION_MB = 'Crypto NOTE Lite';
+  FileFilter1 = 'Шифрованный файл (*.cryjson)|*.cryjson';
+  FileFilter2 = 'Текстовый файл (*.txt)|*.txt';
+  FileFilter3 = 'Любой файл (*.*)|*.*';
 
 implementation
 
@@ -97,37 +107,126 @@ var
 begin
   if Not OpenDialog.Execute then Exit;
   FFileName := OpenDialog.FileName;
-  FrmMain.LblFileName.Caption := OpenDialog.FileName;
+  LblFileName.Caption := OpenDialog.FileName;
   ext := ExtractFileExt(AnsiLowerCase(OpenDialog.fileName));
-  if (ext = '.cryjson') or (ext = '.ctxt') or (ext = '.crytxt') then
+  if (ext = '.cryjson') or (ext = '.crytxt') then
   begin
     DecryptOpenFile;
   end
   else
   begin
     SynEdit.Lines.LoadFromFile(OpenDialog.FileName);
-    JSONFile := Nil;
-    FIsEncrypt := false;
+    SynEdit.Modified := false;
+    JSONFile         := Nil;
+    FIsEncrypt       := false;
+    ActKeepDecrypt.Enabled := false;
+    ActSaveEdit.Enabled    := false;
   end;
   UpDateStatusBar;
 end;
 
-procedure TFrmMain.BtnSaveClick(Sender: TObject);
-Var
-  JValue: TJSONValue;
+procedure TFrmMain.ActSaveEditExecute(Sender: TObject);
 begin
-  //JSONFile.SetPairs('algo_type' TJSONString.Create('MODIFED'));
-  JValue := JSONFile.GetValue('algo_type');
-  JValue.Free;
-  Jvalue := TJSONString.Create('Modifed');
-  //JSONFile.AddPair('algo_type', 'Modifed');
-  ///JSONFile.GetValue('algo_type') := TJSONString.Create('Modifed');
-  ShowMessage(JSONFile.GetValue('algo_type').Value);
+  if Not SynEdit.Modified then
+  begin
+    MBox('OK!', MB_ICONINFORMATION);
+    Exit;
+  end;
+
+  if IsEncrypt then
+  begin
+    ActEncryptAndSaveFileExecute(Sender);
+  end
+    else
+  begin
+    ActKeepDecryptExecute(Sender);
+  end;
 end;
 
 procedure TFrmMain.ActExitExecute(Sender: TObject);
 begin
   Close;
+end;
+
+procedure TFrmMain.ActKeepDecryptExecute(Sender: TObject);
+var
+  ext: string;
+  SaveFileName: string;
+begin
+  {
+  if SynEdit.Lines.Text = '' then
+  begin
+    // message
+    Exit;
+  end; }
+
+  SaveDialog.Filter := FileFilter2 + '|' + FileFilter3;
+
+  if CurrentFileName = '' then
+  begin
+    if Not SaveDialog.Execute then Exit;
+    if SaveDialog.FilterIndex = 1 then
+    begin
+     ext := AnsiLowerCase(ExtractFileExt(SaveDialog.FileName));
+     if (ext = '') or (ext <> '.txt') then
+       SaveFileName := SaveDialog.FileName + '.txt';
+    end
+    else
+      SaveFileName := SaveDialog.FileName;
+  end
+    else
+  begin
+    if Sender = ActKeepDecrypt then
+    begin
+      SaveFileName := CurrentFileName;
+      ext := ExtractFileExt(CurrentFileName);
+      delete(SaveFileName, Length(SaveFileName)-length(ext)+1, length(ext));
+      SaveFileName := SaveFileName + '.txt';
+      SaveDialog.FileName := SaveFileName;
+      if Not SaveDialog.Execute then Exit;
+      SaveFileName := SaveDialog.FileName;
+    end
+    else
+      SaveFileName := CurrentFileName;
+  end;
+
+  if Sender = ActKeepDecrypt then
+    if FileExists(SaveFileName) then
+      if MessageBox(Handle,
+                    PChar('Файл с таким именем уже существует, заменить его?'),
+                    PChar(CAPTION_MB), MB_YESNO) = ID_NO then Exit;
+
+  //ShowMessage(SaveFileName);
+  SynEdit.Lines.SaveToFile(SaveFileName);
+  //LblFileName.Caption := SaveDialog.FileName;
+  //FIsEncrypt          := false;
+  //SynEdit.Modified    := false;
+  UpDateStatusBar;
+  MBox('Данные успешно сохранены.', MB_ICONINFORMATION);
+end;
+
+procedure TFrmMain.ActAddNewExecute(Sender: TObject);
+var
+  ID_RES: integer;
+begin
+
+  if (SynEdit.lines.Text <> '') and SynEdit.Modified then  // (CurrentFileName <> '')
+  begin
+    ID_RES := MBox('Предыдущий текст необходимо сохранить?', MB_YESNOCANCEL or MB_ICONQUESTION);
+    if ID_RES = ID_CANCEL then Exit;
+    if ID_RES = ID_YES then ActSaveEditExecute(Sender);
+  end;
+
+  SynEdit.Lines.Clear;
+  SynEdit.Modified    := false;
+  FFileName           := '';
+  FIsEncrypt          := false;
+  JSONFile            := Nil;
+  LblFileName.Caption := '<Новая запись>';
+  ActEncryptAndSaveFile.Enabled := false;
+  ActSaveEdit.Enabled    := false;
+  ActKeepDecrypt.Enabled := false;
+  UpDateStatusBar;
 end;
 
 procedure TFrmMain.ActEncryptAndSaveFileExecute(Sender: TObject);
@@ -138,24 +237,32 @@ var
   AEContent    : AnsiString;
   JSONBytes    : TBytes;
   JValue       : TJSONValue;
+  SaveFile     : String;
+  ALGO         : TAlgoType;
 begin
 
   if (Not SynEdit.Modified) and (SynEdit.lines.Text = '') then
   begin
-    MsgBox('Действие остановлено: Пустое содержание', MB_ICONWARNING);
+    MBox('Действие остановлено: Пустое содержание', MB_ICONWARNING);
     Exit;
   end;
 
   // Выбор алгоритма шифрования; Select crypt algoritm for encrypt
-  FrmSelectEncrypt.FrmShowModal(DLG_ECRYPT);
-  if Not FrmSelectEncrypt.Apply then Exit;
+  if Sender = ActEncryptAndSaveFile then
+  begin
+    FrmSelectEncrypt.FrmShowModal(DLG_ECRYPT);
+    if Not FrmSelectEncrypt.Apply then Exit;
+    ALGO := FrmSelectEncrypt.ALGO;
+  end;
 
   dt := Date + Time;
   JContent := TJSONObject.Create;
   JContent.AddPair('content', SynEdit.Lines.Text);
   JContent.AddPair('content_hash', GetSHA1Hash(SynEdit.Lines.Text));
 
-  case FrmSelectEncrypt.ALGO of
+  ALGO := GetAlgoType(JSONFile.FindValue('algo_type').Value);
+
+  case ALGO of
     RC4_SHA1   : AEContent := EncryptRC4_SHA1(MASTER_PASSWORD, JContent.ToJSON);
     RC4_SHA256 : AEContent := EncryptRC4_SHA256(MASTER_PASSWORD, JContent.ToJSON);
     RC4_SHA512 : AEContent := EncryptRC4_SHA512(MASTER_PASSWORD, JContent.ToJSON);
@@ -196,16 +303,39 @@ begin
   end;
 
   // Выбор файла, если он не существует; Select file If filename not existes
-  if FileName = '' then
+  if CurrentFileName = '' then
   begin
-    if SaveDialog.Execute then Exit;
-    FFileName  := SaveDialog.FileName;
-  end;
+    SaveDialog.filter := FileFilter1;
+    if Not SaveDialog.Execute then Exit;
 
-  // Сохраняю содержимое в файл; Saving content to a file
-  TFile.WriteAllText(FileName, JSONFile.toJson);
-  FIsEncrypt := true;
-  MsgBox('Всё выполнена успешно.', MB_ICONINFORMATION);
+    SaveFile :=  AnsiLowerCase(SaveDialog.FileName);
+
+    if ExtractFileExt(SaveFile) <> '.cryjson' then SaveFile := SaveFile + '.cryjson';
+
+
+    if FileExists(SaveFile) then
+      if MBox('Файл с таким именем существует, заменить его?',
+              MB_YESNO or MB_ICONWARNING) = ID_NO then Exit;
+
+    // Сохраняю содержимое в файл; Saving content to a file
+    TFile.WriteAllText(SaveFile, JSONFile.toJson);
+    FFileName  := SaveFile;
+    FIsEncrypt := true;
+    LblFileName.Caption := SaveFile;
+  end
+  else
+  begin
+    if Sender = ActEncryptAndSaveFile then
+      if FileExists(CurrentFileName) then
+        if MBox('Открытый файл будет сохранен с новыми изменениями, продолжить?',
+              MB_YESNO or MB_ICONWARNING) = ID_NO then Exit;
+    // Сохраняю содержимое в файл; Saving content to a file
+    TFile.WriteAllText(CurrentFileName, JSONFile.toJson);
+    SynEdit.Modified    := false;
+    ActSaveEdit.Enabled := false;
+  end;
+  MBox('Всё выполнено успешно.', MB_ICONINFORMATION);
+  UpDateStatusBar;
 end;
 
 {------------------------------- DecryptOpenFile ------------------------------}
@@ -217,16 +347,16 @@ var
   JContent: TJSONObject;
   Hash: String;
 begin
-  JSONFile := TJSONObject.ParseJSONValue(TFile.ReadAllBytes(FileName), 0) as TJSONObject;
+  JSONFile := TJSONObject.ParseJSONValue(TFile.ReadAllBytes(CurrentFileName), 0) as TJSONObject;
   if JSONFile = Nil then
   begin
-    MsgBox('Файл не сродержит формат "JSON" JSONFile = Nil', MB_ICONERROR); // error message
+    MBox('Файл не сродержит формат "JSON" JSONFile = Nil', MB_ICONERROR); // error message
     Exit;
   end;
 
   if JSONFile.FindValue('encrypted_content') = Nil then
   begin
-    MsgBox('В файле не найден параметр "encrypted_content"', MB_ICONERROR); //error message
+    MBox('В файле не найден параметр "encrypted_content"', MB_ICONERROR); //error message
     Exit;
   end;
 
@@ -234,7 +364,7 @@ begin
 
   if JSONFile.FindValue('algo_type') = Nil then
   begin
-    MsgBox('В файле не найден параметр: "algo_type"', MB_ICONERROR); //error message
+    MBox('В файле не найден параметр: "algo_type"', MB_ICONERROR); //error message
     Exit;
   end;
 
@@ -244,45 +374,45 @@ begin
     RC4_SHA512: AContent := DecryptRC4_SHA1(MASTER_PASSWORD, AStrCrypt);
     else
     begin
-      MsgBox('В файле указан не верный тип шифрования.', MB_ICONERROR);
+      MBox('В файле указан не верный тип шифрования.', MB_ICONERROR);
       Exit;
     end;
   end;
 
   if Length(AContent) = 0 then
   begin
-    MsgBox('AContent имеет 0 символов', MB_ICONERROR); // error message
+    MBox('AContent имеет 0 символов', MB_ICONERROR); // error message
     Exit;
   end;
   JContent := TJSONObject.ParseJSONValue(AContent) as TJSONObject;
   if JContent = nil then
   begin
-    MsgBox('Parse JContent = nil ', MB_ICONERROR); // error message
+    MBox('Parse JContent = nil ', MB_ICONERROR); // error message
     Exit;
   end;
   if JContent.FindValue('content') = Nil then
   begin
-    MsgBox('Не найден параметр "content" в JContent', MB_ICONERROR);// error message
+    MBox('Не найден параметр "content" в JContent', MB_ICONERROR);// error message
     Exit;
   end;
   StrValue := JContent.GetValue('content').Value;
   if Jcontent.FindValue('content_hash') = Nil then
   begin
-    MsgBox('Не найден параметр "content_hash" в JContent', MB_ICONERROR);// error message
+    MBox('Не найден параметр "content_hash" в JContent', MB_ICONERROR);// error message
     Exit;
   end;
   Hash := JContent.GetValue('content_hash').Value;
   if Hash <> GetSHA1Hash(StrValue) then
   begin
     // error message
-    MsgBox('Проверка content_hash вернула, ' +
+    MBox('Проверка content_hash вернула, ' +
                 'что он не равен хешу контента', MB_ICONERROR);
     // Exit;
   end;
 
   SynEdit.Lines.Text := StrValue;
   SynEdit.Modified   := false;
-
+ {
   if JSONFile.FindValue('date_create') <> Nil then
   begin
     StrValue     := JSONFile.GetValue('date_create').Value;
@@ -290,7 +420,7 @@ begin
     //StatusBar.Panels[0].Text := 'Файл сoздан: ' + StrValue;
   end
   else
-    MsgBox('В файле не найден параметр "date_create"', MB_ICONERROR);
+    MBox('В файле не найден параметр "date_create"', MB_ICONERROR);
 
   if JSONFile.FindValue('date_change') <> Nil then
   begin
@@ -299,8 +429,12 @@ begin
     //StatusBar.Panels[1].Text := 'Файл изменен: ' + StrValue;
   end
   else
-    MsgBox('В файле не найден параметр "date_change"', MB_ICONERROR);
+    MBox('В файле не найден параметр "date_change"', MB_ICONERROR);
+    }
   FIsEncrypt := true;
+  UpDateStatusBar;
+  ActKeepDecrypt.Enabled := true;
+  ActSaveEdit.Enabled    := false;
 end;
 
 
@@ -329,16 +463,30 @@ end;
 {-------------------------------- FormCreate ----------------------------------}
 procedure TFrmMain.FormCreate(Sender: TObject);
 begin
-  //FPASSWORD := '';
-
   FSessionKey := GetTrashStr(20);
   FIsEncrypt  := false;
+  ActEncryptAndSaveFile.Enabled := false;
+  ActKeepDecrypt.Enabled        := false;
+  ActSaveEdit.Enabled           := false;
   UpDateStatusBar;
   TStyleManager.SetStyle('Amethyst Kamri'); // 'Sapphire Kamri'
-
 end;
 
-function TFrmMain.GetMasterPaswword: AnsiString;
+procedure TFrmMain.FormShow(Sender: TObject);
+var
+  ext: string;
+begin
+  if ParamCount > 0 then
+  begin
+    ext := AnsiLowerCase(ExtractFileExt(ParamStr(1)));
+    if ext <> '.cryjson' then Exit;
+    FFileName := ParamStr(1);
+    DecryptOpenFile;
+    LblFileName.Caption := (ParamStr(1));
+  end;
+end;
+
+function TFrmMain.GetMasterPassword: AnsiString;
 begin
   Result := DecryptRC4_SHA1(FSessionKey, FMasterPassword);
 end;
@@ -354,6 +502,13 @@ end;
 procedure TFrmMain.SetMasterPassword(APassStr: AnsiString);
 begin
   FMasterPassword := EncryptRC4_SHA1(FSessionKey, APassStr);
+end;
+
+procedure TFrmMain.SynEditChange(Sender: TObject);
+begin
+  if CurrentFileName <> '' then ActSaveEdit.Enabled := true;
+  ActEncryptAndSaveFile.Enabled := true;
+  if IsEncrypt then ActKeepDecrypt.Enabled := true;
 end;
 
 procedure TFrmMain.UpDateStatusBar;
@@ -373,9 +528,9 @@ begin
   end
   else
   begin
-    if FileExists(FileName) then
+    if FileExists(CurrentFileName) then
     begin
-      if FindFirst(FileName, faAnyFile, SR) = 0 then
+      if FindFirst(CurrentFileName, faAnyFile, SR) = 0 then
       begin
         FileTimeToLocalFileTime(SR.FindData.ftCreationTime, LocalTime);
         StatusBar.Panels[0].Text := 'Создан: ' + FormatFileTimeToStr(LocalTime);
@@ -390,12 +545,19 @@ begin
     end;
   end;
   if IsEncrypt then
-    StatusBar.Panels[2].Text := 'Шифрованный: Да'
-  else
-    StatusBar.Panels[2].Text := 'Шифрованный: Нет'
+  begin
+    StatusBar.Panels[2].Text := 'Шифрованный: Да';
+    //if JSONFile.FindValue('algo_type') <> Nil then
+    StatusBar.Panels[3].Text := 'ALGO: ' + JSONFile.GetValue('algo_type').Value;
+  end
+    else
+  begin
+    StatusBar.Panels[2].Text := 'Шифрованный: Нет';
+    StatusBar.Panels[3].Text := 'ALGO: ';
+  end;
 end;
 
-procedure TFrmMain.MsgBox(MsgStr: String; uType: Cardinal);
+function TFrmMain.MBox(MsgStr: String; uType: Cardinal): Integer;
 var
   s: String;
 begin
@@ -404,7 +566,7 @@ begin
     MB_ICONWARNING:     s := 'Предупреждение: ';
     MB_ICONINFORMATION: s := 'Информация: ';
   end;
-  MessageBox(Handle, PChar(s + MsgStr), PChar(CAPTION_MB), uType);
+  Result := MessageBox(FrmMain.Handle, PChar(s + MsgStr), PChar(CAPTION_MB), uType);
 end;
 
 end.

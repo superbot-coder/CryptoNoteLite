@@ -1,10 +1,9 @@
 object FrmMain: TFrmMain
   Left = 0
   Top = 0
-  BorderIcons = [biSystemMenu, biMinimize]
   Caption = 'CRYPTO NOTE Lite'
-  ClientHeight = 644
-  ClientWidth = 767
+  ClientHeight = 785
+  ClientWidth = 872
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -15,13 +14,14 @@ object FrmMain: TFrmMain
   OldCreateOrder = False
   Position = poScreenCenter
   OnCreate = FormCreate
+  OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
   object PnlMain: TPanel
     Left = 0
     Top = 57
-    Width = 767
-    Height = 587
+    Width = 872
+    Height = 728
     Align = alClient
     BevelOuter = bvNone
     Caption = 'PnlMain'
@@ -29,8 +29,8 @@ object FrmMain: TFrmMain
     object SynEdit: TSynEdit
       Left = 0
       Top = 0
-      Width = 767
-      Height = 568
+      Width = 872
+      Height = 709
       Align = alClient
       Ctl3D = True
       ParentCtl3D = False
@@ -40,7 +40,6 @@ object FrmMain: TFrmMain
       Font.Name = 'Consolas'
       Font.Style = []
       Font.Quality = fqClearTypeNatural
-      PopupMenu = PMenu
       TabOrder = 0
       CodeFolding.CollapsedLineColor = clGray
       CodeFolding.FolderBarLinesColor = clInactiveBorder
@@ -51,11 +50,12 @@ object FrmMain: TFrmMain
       Gutter.Font.Name = 'Consolas'
       Gutter.Font.Style = []
       Highlighter = SynGeneralSyn
+      OnChange = SynEditChange
     end
     object StatusBar: TStatusBar
       Left = 0
-      Top = 568
-      Width = 767
+      Top = 709
+      Width = 872
       Height = 19
       Panels = <
         item
@@ -68,19 +68,23 @@ object FrmMain: TFrmMain
         end
         item
           Text = #1064#1080#1092#1088#1086#1074#1072#1085#1085#1099#1081': '
-          Width = 200
+          Width = 150
+        end
+        item
+          Text = 'ALGO:'
+          Width = 100
         end>
     end
   end
   object PnlBar: TPanel
     Left = 0
     Top = 0
-    Width = 767
+    Width = 872
     Height = 57
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 1
-    object LblOpenFile: TLabel
+    object LblFile: TLabel
       Left = 15
       Top = 7
       Width = 30
@@ -107,16 +111,15 @@ object FrmMain: TFrmMain
       Top = 26
       Width = 178
       Height = 25
-      Caption = #1057#1086#1093#1088#1072#1085#1080#1090#1100' '#1080#1079#1084#1077#1085#1077#1085#1080#1103
+      Action = ActSaveEdit
       TabOrder = 1
-      OnClick = BtnSaveClick
     end
     object BtnSaveAsDecrypt: TButton
       Left = 383
       Top = 26
       Width = 178
       Height = 25
-      Caption = #1057#1086#1093#1088#1072#1085#1080#1090#1100' '#1085#1077' '#1079#1072#1096#1080#1092#1088#1086#1074#1072#1085#1099#1084
+      Action = ActKeepDecrypt
       TabOrder = 2
     end
   end
@@ -146,6 +149,11 @@ object FrmMain: TFrmMain
       Caption = #1054#1090#1082#1088#1099#1090#1100' '#1092#1072#1081#1083
       OnExecute = ActOpenFileExecute
     end
+    object ActAddNew: TAction
+      Category = 'File'
+      Caption = #1053#1086#1074#1072#1103' '#1079#1072#1087#1080#1089#1100
+      OnExecute = ActAddNewExecute
+    end
     object ActEncryptAndSaveFile: TAction
       Category = 'File'
       Caption = #1047#1072#1096#1080#1092#1088#1086#1074#1072#1090#1100' '#1080' '#1089#1086#1093#1088#1072#1085#1080#1090#1100
@@ -153,11 +161,13 @@ object FrmMain: TFrmMain
     end
     object ActKeepDecrypt: TAction
       Category = 'File'
-      Caption = #1057#1086#1093#1088#1072#1085#1080#1090#1100' '#1088#1072#1089#1096#1080#1092#1088#1086#1074#1072#1085#1099#1084
+      Caption = #1057#1086#1093#1088#1072#1085#1080#1090#1100' '#1073#1077#1079' '#1096#1080#1092#1088#1086#1074#1072#1085#1080#1103
+      OnExecute = ActKeepDecryptExecute
     end
     object ActSaveEdit: TAction
       Category = 'File'
       Caption = #1057#1088#1086#1093#1088#1072#1085#1080#1090#1100' '#1080#1079#1084#1077#1085#1077#1085#1080#1103
+      OnExecute = ActSaveEditExecute
     end
     object ActExit: TAction
       Category = 'File'
@@ -167,8 +177,8 @@ object FrmMain: TFrmMain
   end
   object OpenDialog: TOpenDialog
     Filter = 
-      #1047#1072#1096#1080#1092#1088#1086#1074#1072#1085#1099#1077' '#1092#1072#1081#1083#1099' (*.cryjson)|*.cryjson|'#1047#1072#1096#1080#1092#1088#1086#1074#1072#1085#1099#1081' '#1092#1072#1081#1083' *.ctx' +
-      't|*.ctxt|'#1058#1077#1082#1090#1086#1074#1099#1081' '#1092#1072#1081#1083' (*.txt)|*.txt'
+      #1047#1072#1096#1080#1092#1088#1086#1074#1072#1085#1099#1077' '#1092#1072#1081#1083#1099' (*.cryjson)|*.cryjson|'#1047#1072#1096#1080#1092#1088#1086#1074#1072#1085#1099#1081' '#1092#1072#1081#1083' *.cry' +
+      'txt|*.crytxt|'#1058#1077#1082#1090#1086#1074#1099#1081' '#1092#1072#1081#1083' (*.txt)|*.txt'
     Left = 488
     Top = 296
   end
@@ -188,8 +198,8 @@ object FrmMain: TFrmMain
     Top = 240
   end
   object PMenu: TPopupMenu
-    Left = 555
-    Top = 297
+    Left = 523
+    Top = 241
   end
   object MainMenu: TMainMenu
     Left = 335
@@ -198,6 +208,9 @@ object FrmMain: TFrmMain
       Caption = #1060#1072#1081#1083
       object Openfilejson1: TMenuItem
         Action = ActOpenFile
+      end
+      object N9: TMenuItem
+        Action = ActAddNew
       end
       object N3: TMenuItem
         Action = ActEncryptAndSaveFile
@@ -515,7 +528,7 @@ object FrmMain: TFrmMain
   end
   object SaveDialog: TSaveDialog
     InitialDir = 'C:\Users\USER\Desktop'
-    Left = 488
-    Top = 345
+    Left = 544
+    Top = 297
   end
 end
