@@ -12,12 +12,12 @@ Type
 
 type
   TFrmMasterPwd = class(TForm)
-    BtnSave: TButton;
+    BtnApply: TButton;
     edPwd1: TLabeledEdit;
     edPwd2: TLabeledEdit;
     ChBoxStrView: TCheckBox;
     ChBoxSaveНаrdLink: TCheckBox;
-    procedure BtnSaveClick(Sender: TObject);
+    procedure BtnApplyClick(Sender: TObject);
     procedure ChBoxStrViewClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormCreate(Sender: TObject);
@@ -25,9 +25,12 @@ type
     procedure ShowModeDlg(DlgMode: TDlgPwdMode);
   private
     FApply: Boolean;
+    FDialogMode: TDlgPwdMode;
+    FOldPassword: AnsiString;
     Procedure ReadPassword;
+    function GetOldPassword: AnsiString;
   public
-    DialogMode: TDlgPwdMode;
+    property OLD_PASSWORD: AnsiString read GetOldPassword;
     Property Apply: Boolean read FApply;
   end;
 
@@ -41,7 +44,7 @@ USES UFrmMain;
 
 {$R *.dfm}
 
-procedure TFrmMasterPwd.BtnSaveClick(Sender: TObject);
+procedure TFrmMasterPwd.BtnApplyClick(Sender: TObject);
 begin
   if edPwd1.Text = '' then
   begin
@@ -49,7 +52,7 @@ begin
     exit;
   end;
 
-  case DialogMode of
+  case FDialogMode of
     DLG_MASTERPWD:
       begin
         if edPwd1.Text <> edPwd2.Text then
@@ -60,14 +63,12 @@ begin
         FrmMain.MASTER_PASSWORD := edPwd1.Text; //  := ;
         SaveMasterPassword;
       end;
-
     DLG_OLDPWD:
       begin
-        //
+        FOldPassword := edPwd1.Text;
+        edPwd1.Text  := '';
       end;
-
   end;
-
   FApply := True;
   Close;
 end;
@@ -84,7 +85,6 @@ begin
     edPwd1.PasswordChar := '*';
     edPwd2.PasswordChar := '*';
   end;
-
 end;
 
 procedure TFrmMasterPwd.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -98,31 +98,34 @@ begin
   ReadPassword;
 end;
 
+function TFrmMasterPwd.GetOldPassword: AnsiString;
+begin
+  Result := FOldPassword;
+  FOldPassword := '';
+end;
+
 procedure TFrmMasterPwd.ShowModeDlg(DlgMode: TDlgPwdMode);
 begin
   FApply := False;
-  DialogMode := DlgMode;
+  FDialogMode := DlgMode;
 
   Case DlgMode of
-
     DLG_MASTERPWD:
       begin
-        Height := 230;
+        Height  := 230;
         Caption := 'Мастер пароль';
         ChBoxSaveНаrdLink.Visible := True;
         ChBoxSaveНаrdLink.Checked := False;
         edPwd2.Show;
       end;
-
     DLG_OLDPWD:
       begin
-        Height := 160;
+        Height  := 160;
         Caption := 'Пароль';
         ChBoxSaveНаrdLink.Visible := False;
         edPwd1.Text := '';
         edPwd2.Hide;
       end;
-
   End;
   ShowModal;
 end;

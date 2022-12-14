@@ -50,6 +50,8 @@ type
     LblFileName: TLabel;
     ActAddNew: TAction;
     N9: TMenuItem;
+    ActMasterPassDown: TAction;
+    N10: TMenuItem;
     procedure ActExitExecute(Sender: TObject);
     procedure ActOpenFileExecute(Sender: TObject);
     procedure ActEncryptAndSaveFileExecute(Sender: TObject);
@@ -61,6 +63,8 @@ type
     procedure ActSaveEditExecute(Sender: TObject);
     procedure ActAddNewExecute(Sender: TObject);
     procedure FormShow(Sender: TObject);
+    procedure MM_SetMasterPassClick(Sender: TObject);
+    procedure ActMasterPassDownExecute(Sender: TObject);
   private
     FIsEncrypt: Boolean;
     FFileName: string;
@@ -68,19 +72,27 @@ type
     FDate_change: TDateTime;
     FSessionKey: AnsiString;
     FMasterPassword: AnsiString;
+    FOldPassword: AnsiString;
     FPASSWORD: AnsiString;
+    FSuccessDecrypted: Boolean;
     procedure DecryptOpenFile;
     function GetMasterPassword: AnsiString;
     procedure SetMasterPassword(APassStr: AnsiString);
     procedure UpDateStatusBar;
+    function GetOldPassword: AnsiString;
+    procedure SetOldPassword(const Value: AnsiString);
+    function GetPassword: AnsiString;
+    procedure SetPassword(const Value: AnsiString);
   public
     JSONFile: TJSONObject;
     property MASTER_PASSWORD: AnsiString read GetMasterPassword write SetMasterPassword;
+    property OLD_PASSWORD: AnsiString read GetOldPassword write SetOldPassword;
+    property PASSWORD: AnsiString read GetPassword write SetPassword;
     property CurrentFileName: string read FFileName;
     property DateCreate: TDateTime read FDate_create;
     property DateChange: TDateTime read FDate_change;
     property IsEncrypt: Boolean read FIsEncrypt;
-
+    property IsSuccessDecrypted: Boolean read FSuccessDecrypted;
     function FormatFileTimeToStr(LocalTime: tFileTime): String;
     function FormatDateTimeToStr(DateTimeStr: String): String;
   end;
@@ -112,6 +124,11 @@ begin
   if (ext = '.cryjson') or (ext = '.crytxt') then
   begin
     DecryptOpenFile;
+    if IsSuccessDecrypted = false then
+    begin
+      FFileName := '';
+    end;
+
   end
   else
   begin
@@ -205,21 +222,36 @@ begin
   MBox('Данные успешно сохранены.', MB_ICONINFORMATION);
 end;
 
+procedure TFrmMain.ActMasterPassDownExecute(Sender: TObject);
+begin
+  if MASTER_PASSWORD = '' then Exit;
+  if MBox('Что бы выполнить это действие' + #13
+          + 'необходимо ввести мастер-пароль' + #13
+          + 'продолжить?', MB_YESNO or MB_ICONQUESTION) = ID_NO then Exit;
+  Repeat
+    FrmMasterPwd.ShowModeDlg(DLG_OLDPWD);
+    if Not FrmMasterPwd.Apply then Exit;
+  Until MASTER_PASSWORD = FrmMasterPwd.OLD_PASSWORD;
+
+  // Сбрас MASTER_PASSWORD
+  FMasterPassword := '';
+  MBox('мастер-пароль сброшен.', MB_ICONINFORMATION);
+end;
+
 procedure TFrmMain.ActAddNewExecute(Sender: TObject);
 var
   ID_RES: integer;
 begin
-
   if (SynEdit.lines.Text <> '') and SynEdit.Modified then  // (CurrentFileName <> '')
   begin
     ID_RES := MBox('Предыдущий текст необходимо сохранить?', MB_YESNOCANCEL or MB_ICONQUESTION);
     if ID_RES = ID_CANCEL then Exit;
     if ID_RES = ID_YES then ActSaveEditExecute(Sender);
   end;
-
   SynEdit.Lines.Clear;
   SynEdit.Modified    := false;
   FFileName           := '';
+  FPASSWORD           := '';
   FIsEncrypt          := false;
   JSONFile            := Nil;
   LblFileName.Caption := '<Новая запись>';
@@ -239,6 +271,7 @@ var
   JValue       : TJSONValue;
   SaveFile     : String;
   ALGO         : TAlgoType;
+  //PASSWORD     : AnsiString;
 begin
 
   if (Not SynEdit.Modified) and (SynEdit.lines.Text = '') then
@@ -255,17 +288,28 @@ begin
     ALGO := FrmSelectEncrypt.ALGO;
   end;
 
+  if PASSWORD = '' then
+    if (not FrmSelectEncrypt.SelMasterPassword) or (MASTER_PASSWORD = '') then
+    begin
+      FrmMasterPwd.ShowModeDlg(DLG_OLDPWD);
+      if Not FrmMasterPwd.Apply then Exit;
+      PASSWORD := FrmMasterPwd.OLD_PASSWORD;
+    end
+    else
+      PASSWORD := MASTER_PASSWORD;
+
   dt := Date + Time;
   JContent := TJSONObject.Create;
   JContent.AddPair('content', SynEdit.Lines.Text);
   JContent.AddPair('content_hash', GetSHA1Hash(SynEdit.Lines.Text));
 
-  ALGO := GetAlgoType(JSONFile.FindValue('algo_type').Value);
+  if Sender = ActSaveEdit then
+    ALGO := GetAlgoType(JSONFile.FindValue('algo_type').Value);
 
   case ALGO of
-    RC4_SHA1   : AEContent := EncryptRC4_SHA1(MASTER_PASSWORD, JContent.ToJSON);
-    RC4_SHA256 : AEContent := EncryptRC4_SHA256(MASTER_PASSWORD, JContent.ToJSON);
-    RC4_SHA512 : AEContent := EncryptRC4_SHA512(MASTER_PASSWORD, JContent.ToJSON);
+    RC4_SHA1   : AEContent := EncryptRC4_SHA1(PASSWORD, JContent.ToJSON);
+    RC4_SHA256 : AEContent := EncryptRC4_SHA256(PASSWORD, JContent.ToJSON);
+    RC4_SHA512 : AEContent := EncryptRC4_SHA512(PASSWORD, JContent.ToJSON);
   end;
 
   content_hash := GetSHA1Hash(AEContent);
@@ -346,7 +390,10 @@ var
   StrValue: string;
   JContent: TJSONObject;
   Hash: String;
+  //PASSWORD: AnsiString;
+  second_attempt: Boolean;
 begin
+  FSuccessDecrypted := false;
   JSONFile := TJSONObject.ParseJSONValue(TFile.ReadAllBytes(CurrentFileName), 0) as TJSONObject;
   if JSONFile = Nil then
   begin
@@ -368,28 +415,49 @@ begin
     Exit;
   end;
 
-  case GetAlgoType(JSONFile.GetValue('algo_type').Value) of
-    RC4_SHA1:   AContent := DecryptRC4_SHA1(MASTER_PASSWORD, AStrCrypt);
-    RC4_SHA256: AContent := DecryptRC4_SHA1(MASTER_PASSWORD, AStrCrypt);
-    RC4_SHA512: AContent := DecryptRC4_SHA1(MASTER_PASSWORD, AStrCrypt);
-    else
+  ALGO := GetAlgoType(JSONFile.GetValue('algo_type').Value);
+
+  repeat
+
+    if (MASTER_PASSWORD = '') or second_attempt then
     begin
-      MBox('В файле указан не верный тип шифрования.', MB_ICONERROR);
+      FrmMasterPwd.ShowModeDlg(DLG_OLDPWD);
+      PASSWORD := FrmMasterPwd.OLD_PASSWORD;
+    end
+    else
+      PASSWORD := MASTER_PASSWORD;
+
+    //ShowMessage('PASSWORD: ' + PASSWORD);
+    case ALGO of
+      RC4_SHA1:   AContent := DecryptRC4_SHA1(PASSWORD, AStrCrypt);
+      RC4_SHA256: AContent := DecryptRC4_SHA1(PASSWORD, AStrCrypt);
+      RC4_SHA512: AContent := DecryptRC4_SHA1(PASSWORD, AStrCrypt);
+      else
+      begin
+        MBox('В файле указан не верный тип шифрования.', MB_ICONERROR);
+        Exit;
+      end;
+    end;
+
+    if Length(AContent) = 0 then
+    begin
+      MBox('AContent имеет 0 символов', MB_ICONERROR); // error message
       Exit;
     end;
-  end;
 
-  if Length(AContent) = 0 then
-  begin
-    MBox('AContent имеет 0 символов', MB_ICONERROR); // error message
-    Exit;
-  end;
-  JContent := TJSONObject.ParseJSONValue(AContent) as TJSONObject;
-  if JContent = nil then
-  begin
-    MBox('Parse JContent = nil ', MB_ICONERROR); // error message
-    Exit;
-  end;
+    JContent := TJSONObject.ParseJSONValue(AContent) as TJSONObject;
+    if JContent = nil then
+    begin
+      if MBox('Не удалось расшифровать содержание' + #13
+              + 'сделать попытку с другим паролем?',
+              MB_ICONQUESTION or MB_YESNO) = ID_NO then Exit; // error message
+      second_attempt := true;
+    end
+      else
+    FSuccessDecrypted := true;
+
+  until FSuccessDecrypted;
+
   if JContent.FindValue('content') = Nil then
   begin
     MBox('Не найден параметр "content" в JContent', MB_ICONERROR);// error message
@@ -412,25 +480,7 @@ begin
 
   SynEdit.Lines.Text := StrValue;
   SynEdit.Modified   := false;
- {
-  if JSONFile.FindValue('date_create') <> Nil then
-  begin
-    StrValue     := JSONFile.GetValue('date_create').Value;
-    FDate_create := StrToDateTime(StrValue);
-    //StatusBar.Panels[0].Text := 'Файл сoздан: ' + StrValue;
-  end
-  else
-    MBox('В файле не найден параметр "date_create"', MB_ICONERROR);
 
-  if JSONFile.FindValue('date_change') <> Nil then
-  begin
-    StrValue     := JSONFile.GetValue('date_change').Value;
-    FDate_change := StrToDateTime(StrValue);
-    //StatusBar.Panels[1].Text := 'Файл изменен: ' + StrValue;
-  end
-  else
-    MBox('В файле не найден параметр "date_change"', MB_ICONERROR);
-    }
   FIsEncrypt := true;
   UpDateStatusBar;
   ActKeepDecrypt.Enabled := true;
@@ -488,7 +538,23 @@ end;
 
 function TFrmMain.GetMasterPassword: AnsiString;
 begin
+  if FMasterPassword = '' then Exit;
   Result := DecryptRC4_SHA1(FSessionKey, FMasterPassword);
+end;
+
+function TFrmMain.GetOldPassword: AnsiString;
+begin
+  Result := DecryptRC4_SHA1(FSessionKey, FOldPassword);
+end;
+
+function TFrmMain.GetPassword: AnsiString;
+begin
+  Result := DecryptRC4_SHA1(FSessionKey, FPASSWORD);
+end;
+
+procedure TFrmMain.MM_SetMasterPassClick(Sender: TObject);
+begin
+  FrmMasterPwd.ShowModeDlg(DLG_MASTERPWD);
 end;
 
 procedure TFrmMain.MM_WordWrapClick(Sender: TObject);
@@ -501,7 +567,22 @@ end;
 
 procedure TFrmMain.SetMasterPassword(APassStr: AnsiString);
 begin
+  if APassStr = '' then
+  begin
+    FMasterPassword := '';
+    Exit;
+  end;
   FMasterPassword := EncryptRC4_SHA1(FSessionKey, APassStr);
+end;
+
+procedure TFrmMain.SetOldPassword(const Value: AnsiString);
+begin
+  FOldPassword := EncryptRC4_SHA1(FSessionKey, Value);
+end;
+
+procedure TFrmMain.SetPassword(const Value: AnsiString);
+begin
+  FPASSWORD := EncryptRC4_SHA1(FSessionKey, Value);
 end;
 
 procedure TFrmMain.SynEditChange(Sender: TObject);

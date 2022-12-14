@@ -174,6 +174,11 @@ object FrmMain: TFrmMain
       Caption = #1042#1099#1093#1086#1076
       OnExecute = ActExitExecute
     end
+    object ActMasterPassDown: TAction
+      Category = #1055#1072#1088#1072#1084#1077#1090#1088#1099
+      Caption = #1057#1073#1088#1086#1089#1080#1090#1100' '#1052#1040#1057#1058#1045#1056'-'#1055#1040#1056#1054#1051#1068
+      OnExecute = ActMasterPassDownExecute
+    end
   end
   object OpenDialog: TOpenDialog
     Filter = 
@@ -240,6 +245,10 @@ object FrmMain: TFrmMain
       Caption = #1055#1072#1088#1072#1084#1077#1090#1088#1099
       object MM_SetMasterPass: TMenuItem
         Caption = #1059#1089#1090#1072#1085#1086#1074#1080#1090#1100' '#1084#1072#1089#1090#1077#1088' '#1087#1072#1088#1086#1083#1100
+        OnClick = MM_SetMasterPassClick
+      end
+      object N10: TMenuItem
+        Action = ActMasterPassDown
       end
       object MM_Settings: TMenuItem
         Caption = #1053#1072#1089#1090#1088#1086#1081#1082#1080

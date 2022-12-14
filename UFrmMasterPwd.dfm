@@ -20,15 +20,15 @@
     208)
   PixelsPerInch = 96
   TextHeight = 16
-  object BtnSave: TButton
+  object BtnApply: TButton
     Left = 104
     Top = 167
     Width = 153
-    Height = 33
+    Height = 30
     Anchors = [akLeft, akRight, akBottom]
     Caption = #1055#1056#1048#1052#1045#1053#1048#1058#1068
     TabOrder = 0
-    OnClick = BtnSaveClick
+    OnClick = BtnApplyClick
   end
   object edPwd1: TLabeledEdit
     Left = 16

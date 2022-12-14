@@ -8,6 +8,7 @@ uses
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
   Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.ComCtrls, CryptMod;
 
+
 type
   TFrmSelectEncrypt = class(TForm)
     RadioGroup: TRadioGroup;
@@ -19,9 +20,11 @@ type
     procedure FormCreate(Sender: TObject);
     procedure BtnOKClick(Sender: TObject);
   private
+    FSelMasterPass: Boolean;
     FApply: Boolean;
     FAlgo: TAlgoType;
   public
+    property SelMasterPassword: Boolean read FSelMasterPass;
     Property Apply: Boolean read FApply;
     property ALGO: TAlgoType read FAlgo;
   end;
@@ -38,6 +41,8 @@ USES UfrmMain;
 procedure TFrmSelectEncrypt.BtnOKClick(Sender: TObject);
 begin
   FALGO  := GetAlgoType(CmBoxExAlgo.Text);
+  if RadioGroup.ItemIndex = 0 then FSelMasterPass := true
+  else FSelMasterPass := false;
   FApply := true;
   Close;
 end;
