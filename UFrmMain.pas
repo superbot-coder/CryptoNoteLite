@@ -65,6 +65,7 @@ type
     procedure FormShow(Sender: TObject);
     procedure MM_SetMasterPassClick(Sender: TObject);
     procedure ActMasterPassDownExecute(Sender: TObject);
+    procedure MM_SettingsClick(Sender: TObject);
   private
     FIsEncrypt: Boolean;
     FFileName: string;
@@ -111,7 +112,7 @@ implementation
 
 {$R *.dfm}
 
-USES UFrmSelectEncrypt, UFrmMasterPwd;
+USES UFrmSelectEncrypt, UFrmMasterPwd, UFrmSettings;
 
 procedure TFrmMain.ActOpenFileExecute(Sender: TObject);
 var
@@ -124,11 +125,7 @@ begin
   if (ext = '.cryjson') or (ext = '.crytxt') then
   begin
     DecryptOpenFile;
-    if IsSuccessDecrypted = false then
-    begin
-      FFileName := '';
-    end;
-
+    if IsSuccessDecrypted = false then ActAddNewExecute(Sender);
   end
   else
   begin
@@ -144,6 +141,9 @@ end;
 
 procedure TFrmMain.ActSaveEditExecute(Sender: TObject);
 begin
+
+  FrmMasterPwd.ShowModeDlg(DLG_OLDPWD_TWO);
+exit;
   if Not SynEdit.Modified then
   begin
     MBox('OK!', MB_ICONINFORMATION);
@@ -231,7 +231,7 @@ begin
   Repeat
     FrmMasterPwd.ShowModeDlg(DLG_OLDPWD);
     if Not FrmMasterPwd.Apply then Exit;
-  Until MASTER_PASSWORD = FrmMasterPwd.OLD_PASSWORD;
+  Until MASTER_PASSWORD = FrmMasterPwd.PASSWORD;
 
   // Сбрас MASTER_PASSWORD
   FMasterPassword := '';
@@ -293,7 +293,7 @@ begin
     begin
       FrmMasterPwd.ShowModeDlg(DLG_OLDPWD);
       if Not FrmMasterPwd.Apply then Exit;
-      PASSWORD := FrmMasterPwd.OLD_PASSWORD;
+      PASSWORD := FrmMasterPwd.PASSWORD;
     end
     else
       PASSWORD := MASTER_PASSWORD;
@@ -422,12 +422,12 @@ begin
     if (MASTER_PASSWORD = '') or second_attempt then
     begin
       FrmMasterPwd.ShowModeDlg(DLG_OLDPWD);
-      PASSWORD := FrmMasterPwd.OLD_PASSWORD;
+      if Not FrmMasterPwd.Apply then Exit;
+      PASSWORD := FrmMasterPwd.PASSWORD;
     end
     else
       PASSWORD := MASTER_PASSWORD;
 
-    //ShowMessage('PASSWORD: ' + PASSWORD);
     case ALGO of
       RC4_SHA1:   AContent := DecryptRC4_SHA1(PASSWORD, AStrCrypt);
       RC4_SHA256: AContent := DecryptRC4_SHA1(PASSWORD, AStrCrypt);
@@ -538,23 +538,30 @@ end;
 
 function TFrmMain.GetMasterPassword: AnsiString;
 begin
-  if FMasterPassword = '' then Exit;
-  Result := DecryptRC4_SHA1(FSessionKey, FMasterPassword);
+  if FMasterPassword <> '' then
+    Result := DecryptRC4_SHA1(FSessionKey, FMasterPassword);
 end;
 
 function TFrmMain.GetOldPassword: AnsiString;
 begin
-  Result := DecryptRC4_SHA1(FSessionKey, FOldPassword);
+  if FOldPassword <> '' then
+    Result := DecryptRC4_SHA1(FSessionKey, FOldPassword);
 end;
 
 function TFrmMain.GetPassword: AnsiString;
 begin
-  Result := DecryptRC4_SHA1(FSessionKey, FPASSWORD);
+  if FPASSWORD <> '' then
+    Result := DecryptRC4_SHA1(FSessionKey, FPASSWORD);
 end;
 
 procedure TFrmMain.MM_SetMasterPassClick(Sender: TObject);
 begin
   FrmMasterPwd.ShowModeDlg(DLG_MASTERPWD);
+end;
+
+procedure TFrmMain.MM_SettingsClick(Sender: TObject);
+begin
+  FrmSettings.ShowModal;
 end;
 
 procedure TFrmMain.MM_WordWrapClick(Sender: TObject);
@@ -567,22 +574,17 @@ end;
 
 procedure TFrmMain.SetMasterPassword(APassStr: AnsiString);
 begin
-  if APassStr = '' then
-  begin
-    FMasterPassword := '';
-    Exit;
-  end;
-  FMasterPassword := EncryptRC4_SHA1(FSessionKey, APassStr);
+  if APassStr <> '' then FMasterPassword := EncryptRC4_SHA1(FSessionKey, APassStr);
 end;
 
 procedure TFrmMain.SetOldPassword(const Value: AnsiString);
 begin
-  FOldPassword := EncryptRC4_SHA1(FSessionKey, Value);
+  if Value <> '' then FOldPassword := EncryptRC4_SHA1(FSessionKey, Value)
 end;
 
 procedure TFrmMain.SetPassword(const Value: AnsiString);
 begin
-  FPASSWORD := EncryptRC4_SHA1(FSessionKey, Value);
+  if Value <> '' then FPASSWORD := EncryptRC4_SHA1(FSessionKey, Value)
 end;
 
 procedure TFrmMain.SynEditChange(Sender: TObject);

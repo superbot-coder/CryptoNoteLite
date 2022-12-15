@@ -107,8 +107,9 @@
         </DCCReference>
         <DCCReference Include="UFrmSelectEncrypt.pas"/>
         <DCCReference Include="UFrmMasterPwd.pas"/>
-        <DCCReference Include="UFrmEdit.pas">
-            <Form>Form1</Form>
+        <DCCReference Include="UFrmSettings.pas">
+            <Form>FrmSettings</Form>
+            <FormType>dfm</FormType>
         </DCCReference>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>

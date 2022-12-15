@@ -8,7 +8,7 @@ uses
   Vcl.StdCtrls, Vcl.ExtCtrls, Registry, CryptMod;
 
 Type
-  TDlgPwdMode = (DLG_MASTERPWD, DLG_OLDPWD);
+  TDlgPwdMode = (DLG_MASTERPWD, DLG_OLDPWD, DLG_OLDPWD_TWO);
 
 type
   TFrmMasterPwd = class(TForm)
@@ -26,11 +26,11 @@ type
   private
     FApply: Boolean;
     FDialogMode: TDlgPwdMode;
-    FOldPassword: AnsiString;
+    FPassword: AnsiString;
     Procedure ReadPassword;
-    function GetOldPassword: AnsiString;
+    function GetPassword: AnsiString;
   public
-    property OLD_PASSWORD: AnsiString read GetOldPassword;
+    property PASSWORD: AnsiString read GetPassword;
     Property Apply: Boolean read FApply;
   end;
 
@@ -65,9 +65,18 @@ begin
       end;
     DLG_OLDPWD:
       begin
-        FOldPassword := edPwd1.Text;
+        FPassword := edPwd1.Text;
         edPwd1.Text  := '';
       end;
+    DLG_OLDPWD_TWO:
+     begin
+       if edPwd1.Text <> edPwd2.Text then
+       begin
+         ShowMessage('Веденные пароли не совпадают');
+         exit;
+       end;
+       FPassword := edPwd1.Text;
+     end;
   end;
   FApply := True;
   Close;
@@ -98,10 +107,10 @@ begin
   ReadPassword;
 end;
 
-function TFrmMasterPwd.GetOldPassword: AnsiString;
+function TFrmMasterPwd.GetPassword: AnsiString;
 begin
-  Result := FOldPassword;
-  FOldPassword := '';
+  Result := FPassword;
+  FPassword := '';
 end;
 
 procedure TFrmMasterPwd.ShowModeDlg(DlgMode: TDlgPwdMode);
@@ -125,6 +134,14 @@ begin
         ChBoxSaveНаrdLink.Visible := False;
         edPwd1.Text := '';
         edPwd2.Hide;
+      end;
+    DLG_OLDPWD_TWO:
+      begin
+        Height  := 210;
+        Caption := 'Пароль';
+        ChBoxSaveНаrdLink.Visible := false;
+        ChBoxSaveНаrdLink.Checked := False;
+        edPwd2.Show;
       end;
   End;
   ShowModal;

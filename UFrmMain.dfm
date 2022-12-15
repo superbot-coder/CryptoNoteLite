@@ -252,6 +252,7 @@ object FrmMain: TFrmMain
       end
       object MM_Settings: TMenuItem
         Caption = #1053#1072#1089#1090#1088#1086#1081#1082#1080
+        OnClick = MM_SettingsClick
       end
     end
     object N8: TMenuItem

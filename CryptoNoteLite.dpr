@@ -5,9 +5,9 @@ uses
   UFrmMain in 'UFrmMain.pas' {FrmMain},
   UFrmSelectEncrypt in 'UFrmSelectEncrypt.pas',
   UFrmMasterPwd in 'UFrmMasterPwd.pas',
-  UFrmEdit in 'UFrmEdit.pas' {Form1},
   Vcl.Themes,
-  Vcl.Styles;
+  Vcl.Styles,
+  UFrmSettings in 'UFrmSettings.pas' {FrmSettings};
 
 {$R *.res}
 
@@ -18,6 +18,6 @@ begin
   Application.CreateForm(TFrmMain, FrmMain);
   Application.CreateForm(TFrmSelectEncrypt, FrmSelectEncrypt);
   Application.CreateForm(TFrmMasterPwd, FrmMasterPwd);
-  Application.CreateForm(TForm1, Form1);
+  Application.CreateForm(TFrmSettings, FrmSettings);
   Application.Run;
 end.

@@ -3,7 +3,7 @@
   Top = 0
   BorderStyle = bsToolWindow
   Caption = #1052#1072#1089#1090#1077#1088' '#1087#1072#1088#1086#1083#1100
-  ClientHeight = 208
+  ClientHeight = 205
   ClientWidth = 365
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -17,7 +17,7 @@
   OnCreate = FormCreate
   DesignSize = (
     365
-    208)
+    205)
   PixelsPerInch = 96
   TextHeight = 16
   object BtnApply: TButton
@@ -29,6 +29,7 @@
     Caption = #1055#1056#1048#1052#1045#1053#1048#1058#1068
     TabOrder = 0
     OnClick = BtnApplyClick
+    ExplicitTop = 170
   end
   object edPwd1: TLabeledEdit
     Left = 16
@@ -38,7 +39,7 @@
     EditLabel.Width = 48
     EditLabel.Height = 16
     EditLabel.Caption = #1055#1072#1088#1086#1083#1100':'
-    MaxLength = 64
+    MaxLength = 32
     PasswordChar = '*'
     TabOrder = 1
   end
@@ -50,19 +51,20 @@
     EditLabel.Width = 103
     EditLabel.Height = 16
     EditLabel.Caption = #1055#1072#1088#1086#1083#1100' ('#1087#1086#1074#1090#1086#1088'):'
-    MaxLength = 64
+    MaxLength = 32
     PasswordChar = '*'
     TabOrder = 2
   end
   object ChBoxStrView: TCheckBox
     Left = 16
-    Top = 135
+    Top = 132
     Width = 217
     Height = 17
     Anchors = [akLeft, akBottom]
     Caption = #1055#1086#1082#1072#1079#1072#1090#1100' '#1090#1077#1082#1089#1090' '#1087#1086#1076' '#1079#1074#1077#1079#1076#1072#1095#1082#1072#1084#1080
     TabOrder = 3
     OnClick = ChBoxStrViewClick
+    ExplicitTop = 135
   end
   object ChBoxSaveНаrdLink: TCheckBox
     Left = 16
