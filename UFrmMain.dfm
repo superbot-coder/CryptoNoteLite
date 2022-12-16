@@ -122,6 +122,15 @@ object FrmMain: TFrmMain
       Action = ActKeepDecrypt
       TabOrder = 2
     end
+    object BtnTest: TButton
+      Left = 632
+      Top = 26
+      Width = 105
+      Height = 25
+      Caption = 'T E S T'
+      TabOrder = 3
+      OnClick = BtnTestClick
+    end
   end
   object ActionManager: TActionManager
     ActionBars = <

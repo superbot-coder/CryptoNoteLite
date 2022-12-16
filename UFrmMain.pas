@@ -9,7 +9,7 @@ uses
   SynEdit, SynEditHighlighter, SynEditCodeFolding, SynHighlighterPas,
   SynHighlighterGeneral, Vcl.StdCtrls, SynHighlighterJSON, System.JSON, REST.JSON,
   Vcl.ExtCtrls, Vcl.ComCtrls, Vcl.Menus, System.ImageList, Vcl.ImgList, Vcl.Themes,
-  System.IOUtils, System.StrUtils, CryptMod;
+  System.IOUtils, System.StrUtils, CryptMod, Extensions;
 
 type
   TFrmMain = class(TForm)
@@ -52,6 +52,7 @@ type
     N9: TMenuItem;
     ActMasterPassDown: TAction;
     N10: TMenuItem;
+    BtnTest: TButton;
     procedure ActExitExecute(Sender: TObject);
     procedure ActOpenFileExecute(Sender: TObject);
     procedure ActEncryptAndSaveFileExecute(Sender: TObject);
@@ -66,6 +67,7 @@ type
     procedure MM_SetMasterPassClick(Sender: TObject);
     procedure ActMasterPassDownExecute(Sender: TObject);
     procedure MM_SettingsClick(Sender: TObject);
+    procedure BtnTestClick(Sender: TObject);
   private
     FIsEncrypt: Boolean;
     FFileName: string;
@@ -141,9 +143,6 @@ end;
 
 procedure TFrmMain.ActSaveEditExecute(Sender: TObject);
 begin
-
-  FrmMasterPwd.ShowModeDlg(DLG_OLDPWD_TWO);
-exit;
   if Not SynEdit.Modified then
   begin
     MBox('OK!', MB_ICONINFORMATION);
@@ -160,6 +159,11 @@ exit;
   end;
 end;
 
+procedure TFrmMain.BtnTestClick(Sender: TObject);
+begin
+  FrmMasterPwd.ShowModeDlg(DLG_OLDPWD_TWO);
+end;
+
 procedure TFrmMain.ActExitExecute(Sender: TObject);
 begin
   Close;
@@ -167,7 +171,6 @@ end;
 
 procedure TFrmMain.ActKeepDecryptExecute(Sender: TObject);
 var
-  ext: string;
   SaveFileName: string;
 begin
   {
@@ -184,9 +187,9 @@ begin
     if Not SaveDialog.Execute then Exit;
     if SaveDialog.FilterIndex = 1 then
     begin
-     ext := AnsiLowerCase(ExtractFileExt(SaveDialog.FileName));
-     if (ext = '') or (ext <> '.txt') then
-       SaveFileName := SaveDialog.FileName + '.txt';
+     //ext := AnsiLowerCase(ExtractFileExt(SaveDialog.FileName));
+     //if (ext = '') or (ext <> '.txt') then
+       SaveFileName := ChangeFileExt(SaveDialog.FileName, '.txt');
     end
     else
       SaveFileName := SaveDialog.FileName;
@@ -195,10 +198,12 @@ begin
   begin
     if Sender = ActKeepDecrypt then
     begin
-      SaveFileName := CurrentFileName;
-      ext := ExtractFileExt(CurrentFileName);
-      delete(SaveFileName, Length(SaveFileName)-length(ext)+1, length(ext));
-      SaveFileName := SaveFileName + '.txt';
+      // SaveFileName := CurrentFileName;
+      //ext := ExtractFileExt(CurrentFileName);
+      //delete(SaveFileName, Length(SaveFileName)-length(ext)+1, length(ext));
+      // SaveFileName := SaveFileName + '.txt';
+
+      SaveFileName := ChangeFileExt(CurrentFileName, '.txt');
       SaveDialog.FileName := SaveFileName;
       if Not SaveDialog.Execute then Exit;
       SaveFileName := SaveDialog.FileName;
@@ -351,12 +356,7 @@ begin
   begin
     SaveDialog.filter := FileFilter1;
     if Not SaveDialog.Execute then Exit;
-
-    SaveFile :=  AnsiLowerCase(SaveDialog.FileName);
-
-    if ExtractFileExt(SaveFile) <> '.cryjson' then SaveFile := SaveFile + '.cryjson';
-
-
+    SaveFile := ChangeFileExt(SaveDialog.FileName, '.cryjson');
     if FileExists(SaveFile) then
       if MBox('Файл с таким именем существует, заменить его?',
               MB_YESNO or MB_ICONWARNING) = ID_NO then Exit;
