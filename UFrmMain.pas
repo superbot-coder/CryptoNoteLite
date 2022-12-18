@@ -9,7 +9,7 @@ uses
   SynEdit, SynEditHighlighter, SynEditCodeFolding, SynHighlighterPas,
   SynHighlighterGeneral, Vcl.StdCtrls, SynHighlighterJSON, System.JSON, REST.JSON,
   Vcl.ExtCtrls, Vcl.ComCtrls, Vcl.Menus, System.ImageList, Vcl.ImgList, Vcl.Themes,
-  System.IOUtils, System.StrUtils, CryptMod, Extensions;
+  System.IOUtils, System.StrUtils, CryptMod, Extensions, Winapi.ShellAPI;
 
 type
   TFrmMain = class(TForm)
@@ -53,6 +53,9 @@ type
     ActMasterPassDown: TAction;
     N10: TMenuItem;
     BtnTest: TButton;
+    MM_CheckGitHubUpdate: TMenuItem;
+    MM_OpenWebPageOnGitHub: TMenuItem;
+    MM_OpenChanalOnYoutube: TMenuItem;
     procedure ActExitExecute(Sender: TObject);
     procedure ActOpenFileExecute(Sender: TObject);
     procedure ActEncryptAndSaveFileExecute(Sender: TObject);
@@ -63,11 +66,13 @@ type
     procedure SynEditChange(Sender: TObject);
     procedure ActSaveEditExecute(Sender: TObject);
     procedure ActAddNewExecute(Sender: TObject);
-    procedure FormShow(Sender: TObject);
     procedure MM_SetMasterPassClick(Sender: TObject);
     procedure ActMasterPassDownExecute(Sender: TObject);
     procedure MM_SettingsClick(Sender: TObject);
     procedure BtnTestClick(Sender: TObject);
+    procedure FormActivate(Sender: TObject);
+    procedure MM_CheckGitHubUpdateClick(Sender: TObject);
+    procedure MM_OpenWebPageOnGitHubClick(Sender: TObject);
   private
     FIsEncrypt: Boolean;
     FFileName: string;
@@ -103,18 +108,20 @@ type
 var
   FrmMain: TFrmMain;
   G_PWDHASH: AnsiString;
+  USERPROFILE: String;
 
 Const
   CAPTION_MB = 'Crypto NOTE Lite';
   FileFilter1 = 'Шифрованный файл (*.cryjson)|*.cryjson';
   FileFilter2 = 'Текстовый файл (*.txt)|*.txt';
   FileFilter3 = 'Любой файл (*.*)|*.*';
+  WEB_LINK    = 'https://github.com/superbot-coder/CryptoNoteLite';
 
 implementation
 
 {$R *.dfm}
 
-USES UFrmSelectEncrypt, UFrmMasterPwd, UFrmSettings;
+USES UFrmSelectEncrypt, UFrmMasterPwd, UFrmSettings, UFrmGitUpdate;
 
 procedure TFrmMain.ActOpenFileExecute(Sender: TObject);
 var
@@ -161,7 +168,8 @@ end;
 
 procedure TFrmMain.BtnTestClick(Sender: TObject);
 begin
-  FrmMasterPwd.ShowModeDlg(DLG_OLDPWD_TWO);
+  //FrmMasterPwd.ShowModeDlg(DLG_OLDPWD_TWO);
+  ShowMessage(ChangeFileExt('C:\YandexDisk\ACCOUNTS\ИГРЫ\World_of_Tanks.txt', ''));
 end;
 
 procedure TFrmMain.ActExitExecute(Sender: TObject);
@@ -198,15 +206,13 @@ begin
   begin
     if Sender = ActKeepDecrypt then
     begin
-      // SaveFileName := CurrentFileName;
-      //ext := ExtractFileExt(CurrentFileName);
-      //delete(SaveFileName, Length(SaveFileName)-length(ext)+1, length(ext));
-      // SaveFileName := SaveFileName + '.txt';
-
       SaveFileName := ChangeFileExt(CurrentFileName, '.txt');
       SaveDialog.FileName := SaveFileName;
       if Not SaveDialog.Execute then Exit;
-      SaveFileName := SaveDialog.FileName;
+      if SaveDialog.FilterIndex = 1 then
+        SaveFileName := ChangeFileExt(SaveDialog.FileName, '.txt')
+      else
+        SaveFileName := SaveDialog.FileName;
     end
     else
       SaveFileName := CurrentFileName;
@@ -218,11 +224,7 @@ begin
                     PChar('Файл с таким именем уже существует, заменить его?'),
                     PChar(CAPTION_MB), MB_YESNO) = ID_NO then Exit;
 
-  //ShowMessage(SaveFileName);
   SynEdit.Lines.SaveToFile(SaveFileName);
-  //LblFileName.Caption := SaveDialog.FileName;
-  //FIsEncrypt          := false;
-  //SynEdit.Modified    := false;
   UpDateStatusBar;
   MBox('Данные успешно сохранены.', MB_ICONINFORMATION);
 end;
@@ -352,9 +354,13 @@ begin
   end;
 
   // Выбор файла, если он не существует; Select file If filename not existes
-  if CurrentFileName = '' then
+  if (CurrentFileName = '') or (Not IsEncrypt) then
   begin
     SaveDialog.filter := FileFilter1;
+
+    if CurrentFileName <> '' then
+      SaveDialog.FileName := ChangeFileExt(CurrentFileName, '');
+
     if Not SaveDialog.Execute then Exit;
     SaveFile := ChangeFileExt(SaveDialog.FileName, '.cryjson');
     if FileExists(SaveFile) then
@@ -373,6 +379,7 @@ begin
       if FileExists(CurrentFileName) then
         if MBox('Открытый файл будет сохранен с новыми изменениями, продолжить?',
               MB_YESNO or MB_ICONWARNING) = ID_NO then Exit;
+
     // Сохраняю содержимое в файл; Saving content to a file
     TFile.WriteAllText(CurrentFileName, JSONFile.toJson);
     SynEdit.Modified    := false;
@@ -488,6 +495,18 @@ begin
 end;
 
 
+procedure TFrmMain.FormActivate(Sender: TObject);
+begin
+  if ParamCount > 0 then
+  begin
+    if AnsiLowerCase(ExtractFileExt(ParamStr(1))) <> '.cryjson' then Exit;
+    FFileName := ParamStr(1);
+    LblFileName.Caption := ParamStr(1);
+    DecryptOpenFile;
+    if Not IsSuccessDecrypted then ActAddNewExecute(sender);
+  end;
+end;
+
 function TFrmMain.FormatDateTimeToStr(DateTimeStr: String): String;
 var
   sys_time: _SYSTEMTIME;
@@ -522,20 +541,6 @@ begin
   TStyleManager.SetStyle('Amethyst Kamri'); // 'Sapphire Kamri'
 end;
 
-procedure TFrmMain.FormShow(Sender: TObject);
-var
-  ext: string;
-begin
-  if ParamCount > 0 then
-  begin
-    ext := AnsiLowerCase(ExtractFileExt(ParamStr(1)));
-    if ext <> '.cryjson' then Exit;
-    FFileName := ParamStr(1);
-    DecryptOpenFile;
-    LblFileName.Caption := (ParamStr(1));
-  end;
-end;
-
 function TFrmMain.GetMasterPassword: AnsiString;
 begin
   if FMasterPassword <> '' then
@@ -552,6 +557,16 @@ function TFrmMain.GetPassword: AnsiString;
 begin
   if FPASSWORD <> '' then
     Result := DecryptRC4_SHA1(FSessionKey, FPASSWORD);
+end;
+
+procedure TFrmMain.MM_CheckGitHubUpdateClick(Sender: TObject);
+begin
+  FrmGitUpdate.ShowModalInit;
+end;
+
+procedure TFrmMain.MM_OpenWebPageOnGitHubClick(Sender: TObject);
+begin
+  ShellExecute(Handle, PChar('open'), PChar(WEB_LINK), Nil, Nil, SW_NORMAL);
 end;
 
 procedure TFrmMain.MM_SetMasterPassClick(Sender: TObject);

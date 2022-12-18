@@ -13,8 +13,8 @@ object FrmMain: TFrmMain
   Menu = MainMenu
   OldCreateOrder = False
   Position = poScreenCenter
+  OnActivate = FormActivate
   OnCreate = FormCreate
-  OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
   object PnlMain: TPanel
@@ -265,7 +265,19 @@ object FrmMain: TFrmMain
       end
     end
     object N8: TMenuItem
-      Caption = #1055#1086#1084#1086#1097#1100
+      Caption = '??'
+      object MM_CheckGitHubUpdate: TMenuItem
+        Caption = #1055#1088#1086#1074#1077#1088#1080#1090#1100' '#1086#1073#1085#1086#1074#1083#1077#1085#1080#1077
+        OnClick = MM_CheckGitHubUpdateClick
+      end
+      object MM_OpenWebPageOnGitHub: TMenuItem
+        Caption = #1054#1090#1082#1088#1099#1090#1100' '#1074#1077#1073' '#1089#1090#1088#1072#1085#1080#1094#1091' '#1085#1072' GitHub'
+        OnClick = MM_OpenWebPageOnGitHubClick
+      end
+      object MM_OpenChanalOnYoutube: TMenuItem
+        Caption = #1054#1090#1082#1088#1099#1090#1100' '#1082#1072#1085#1072#1083'  Youtube'
+        Visible = False
+      end
     end
   end
   object ImageList: TImageList

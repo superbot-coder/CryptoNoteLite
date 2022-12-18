@@ -12,7 +12,7 @@
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
-  Position = poMainFormCenter
+  Position = poScreenCenter
   OnClose = FormClose
   OnCreate = FormCreate
   DesignSize = (
@@ -63,7 +63,6 @@
     Caption = #1055#1086#1082#1072#1079#1072#1090#1100' '#1090#1077#1082#1089#1090' '#1087#1086#1076' '#1079#1074#1077#1079#1076#1072#1095#1082#1072#1084#1080
     TabOrder = 3
     OnClick = ChBoxStrViewClick
-    ExplicitTop = 147
   end
   object ChBoxSaveНаrdLink: TCheckBox
     Left = 8

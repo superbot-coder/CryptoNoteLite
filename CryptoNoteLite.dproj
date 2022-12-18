@@ -111,6 +111,9 @@
             <Form>FrmSettings</Form>
             <FormType>dfm</FormType>
         </DCCReference>
+        <DCCReference Include="UFrmGitUpdate.pas">
+            <FormType>dfm</FormType>
+        </DCCReference>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

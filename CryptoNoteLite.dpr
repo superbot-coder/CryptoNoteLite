@@ -7,7 +7,8 @@ uses
   UFrmMasterPwd in 'UFrmMasterPwd.pas',
   Vcl.Themes,
   Vcl.Styles,
-  UFrmSettings in 'UFrmSettings.pas' {FrmSettings};
+  UFrmSettings in 'UFrmSettings.pas' {FrmSettings},
+  UFrmGitUpdate in 'UFrmGitUpdate.pas';
 
 {$R *.res}
 
@@ -19,5 +20,6 @@ begin
   Application.CreateForm(TFrmSelectEncrypt, FrmSelectEncrypt);
   Application.CreateForm(TFrmMasterPwd, FrmMasterPwd);
   Application.CreateForm(TFrmSettings, FrmSettings);
+  Application.CreateForm(TFrmGitUpdate, FrmGitUpdate);
   Application.Run;
 end.
