@@ -15,6 +15,7 @@ object FrmMain: TFrmMain
   Position = poScreenCenter
   OnActivate = FormActivate
   OnCreate = FormCreate
+  OnDestroy = FormDestroy
   PixelsPerInch = 96
   TextHeight = 13
   object PnlMain: TPanel

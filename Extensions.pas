@@ -8,9 +8,11 @@ USES
 // ExtName - the extension name exsample *.txt
 // ExtHandler - extension handler that will open files with these extensions
 function RegisterExtension(ExtName, ExtHandler: String): boolean;
+function RegisterOpenFiles(ExtName, ExtHandler: String): boolean;
 
 implementation
 
+{-------------------------------------------------------------------------}
 function RegisterExtension(ExtName, ExtHandler: String): boolean;
 var
   Reg: TRegistry;
@@ -36,6 +38,29 @@ begin
   finally
     Reg.Free;
   end;
+end;
+
+{----------------------- function RegisterOpenFiles() -------------------------}
+function RegisterOpenFiles(ExtName, ExtHandler: String): boolean;
+var
+  Reg: TRegistry;
+begin
+  Result := false;
+  if (ExtName = '') or (ExtHandler = '') then Exit;
+
+  Reg := TRegistry.Create(KEY_WRITE);
+  Reg.RootKey := HKEY_CLASSES_ROOT;
+
+  try
+   if Not Reg.OpenKeyReadOnly(ExtName) then Exit;
+     if Not Reg.ValueExists('') then Exit;
+
+    //
+
+  finally
+    Reg.Free;
+  end;
+  //
 end;
 
 end.

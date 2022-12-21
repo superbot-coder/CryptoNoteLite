@@ -11,6 +11,7 @@ type
     BtnClose: TButton;
     BtnApply: TButton;
     ChBoxRegisterExtension: TCheckBox;
+    ChBoxOpenTxtFiles: TCheckBox;
     procedure BtnCloseClick(Sender: TObject);
     procedure BtnApplyClick(Sender: TObject);
   private

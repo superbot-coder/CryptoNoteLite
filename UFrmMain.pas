@@ -73,6 +73,7 @@ type
     procedure FormActivate(Sender: TObject);
     procedure MM_CheckGitHubUpdateClick(Sender: TObject);
     procedure MM_OpenWebPageOnGitHubClick(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
   private
     FIsEncrypt: Boolean;
     FFileName: string;
@@ -103,6 +104,7 @@ type
     property IsSuccessDecrypted: Boolean read FSuccessDecrypted;
     function FormatFileTimeToStr(LocalTime: tFileTime): String;
     function FormatDateTimeToStr(DateTimeStr: String): String;
+    procedure WMDropFiles(var Msg: TWMDropFiles); message WM_DROPFILES;
   end;
 
 var
@@ -127,10 +129,11 @@ procedure TFrmMain.ActOpenFileExecute(Sender: TObject);
 var
   ext: string;
 begin
-  if Not OpenDialog.Execute then Exit;
+  if Sender = ActOpenFile then
+    if Not OpenDialog.Execute then Exit;
   FFileName := OpenDialog.FileName;
   LblFileName.Caption := OpenDialog.FileName;
-  ext := ExtractFileExt(AnsiLowerCase(OpenDialog.fileName));
+  ext := AnsiLowerCase(ExtractFileExt(OpenDialog.fileName));
   if (ext = '.cryjson') or (ext = '.crytxt') then
   begin
     DecryptOpenFile;
@@ -362,9 +365,11 @@ begin
       SaveDialog.FileName := ChangeFileExt(CurrentFileName, '');
 
     if Not SaveDialog.Execute then Exit;
-    SaveFile := ChangeFileExt(SaveDialog.FileName, '.cryjson');
+    if AnsiLowerCase(ExtractFileExt(SaveDialog.FileName)) <> '.cryjson' then
+      SaveFile := SaveDialog.FileName + '.cryjson';
     if FileExists(SaveFile) then
-      if MBox('Файл с таким именем существует, заменить его?',
+      if MBox('Файл с таким именем существует: ' + SaveFile + #13
+              + ' заменить его?',
               MB_YESNO or MB_ICONWARNING) = ID_NO then Exit;
 
     // Сохраняю содержимое в файл; Saving content to a file
@@ -494,16 +499,13 @@ begin
   ActSaveEdit.Enabled    := false;
 end;
 
-
 procedure TFrmMain.FormActivate(Sender: TObject);
 begin
   if ParamCount > 0 then
   begin
-    if AnsiLowerCase(ExtractFileExt(ParamStr(1))) <> '.cryjson' then Exit;
-    FFileName := ParamStr(1);
-    LblFileName.Caption := ParamStr(1);
-    DecryptOpenFile;
-    if Not IsSuccessDecrypted then ActAddNewExecute(sender);
+    if Not FileExists(ParamStr(1)) then Exit;
+    OpenDialog.fileName := ParamStr(1);
+    ActOpenFileExecute(Sender);
   end;
 end;
 
@@ -539,6 +541,12 @@ begin
   ActSaveEdit.Enabled           := false;
   UpDateStatusBar;
   TStyleManager.SetStyle('Amethyst Kamri'); // 'Sapphire Kamri'
+  DragAcceptFiles(Handle, true);
+end;
+
+procedure TFrmMain.FormDestroy(Sender: TObject);
+begin
+  DragAcceptFiles(Handle, False);
 end;
 
 function TFrmMain.GetMasterPassword: AnsiString;
@@ -652,6 +660,29 @@ begin
   begin
     StatusBar.Panels[2].Text := 'Шифрованный: Нет';
     StatusBar.Panels[3].Text := 'ALGO: ';
+  end;
+end;
+
+procedure TFrmMain.WMDropFiles(var Msg: TWMDropFiles);
+var
+  FileCount: Cardinal;
+  FileName: string;
+  NameLength: Word;
+  ext: String;
+begin
+  try
+    FileCount := DragQueryFile(Msg.Drop, $FFFFFFFF, nil, 0);
+    if FileCount > 1 then Exit;
+    NameLength := DragQueryFile(Msg.Drop, 0 , nil, 0);
+    SetLength(FileName, NameLength);
+    DragQueryFile(Msg.Drop, 0 , PChar(FileName), succ(NameLength));
+    if DirectoryExists(FileName) then Exit;
+    ext := AnsiLowerCase(ExtractFileExt(FileName));
+    if Not ((ext = '.txt') or (ext = '.cryjson')) then Exit;
+    OpenDialog.FileName := FileName;
+    ActOpenFileExecute(Nil);
+  finally
+    DragFinish(Msg.Drop);
   end;
 end;
 
